@@ -1,5 +1,6 @@
 .env
 __pycache__/
 pytest_cache/
-data/
+data/raw/
+data/processed/
 venv/
