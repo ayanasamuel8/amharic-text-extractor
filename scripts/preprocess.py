@@ -1,40 +1,82 @@
 import pandas as pd
+from typing import List, Dict, Any
 import re
-import nltk
-from nltk.tokenize import word_tokenize
-from nltk.corpus import stopwords
+from transformers import AutoTokenizer
 
-nltk.download('punkt')
-nltk.download('stopwords')
+# Load the Hugging Face tokenizer for XLM-Roberta (good for Amharic)
+tokenizer = AutoTokenizer.from_pretrained("xlm-roberta-base")
 
-def load_data(file_path):
-    with open(file_path, 'r', encoding='utf-8') as file:
-        return file.readlines()
-
-def clean_text(text):
-    text = text.lower()  # Convert to lowercase
-    text = re.sub(r'\d+', '', text)  # Remove numbers
-    text = re.sub(r'[^\w\s]', '', text)  # Remove punctuation
+def normalize_amharic(text: str) -> str:
+    """
+    Normalize Amharic-specific punctuation and spacing.
+    """
+    if not isinstance(text, str):
+        return ""
+    
+    # Normalize special punctuation marks
+    text = text.replace('\u1361', ' ')  # ፡ to space
+    text = re.sub(r'[።፣፤]', '.', text)  # Sentence punctuation → period
+    
     return text
 
-def tokenize_text(text):
-    tokens = word_tokenize(text)
-    return [token for token in tokens if token not in stopwords.words('amharic')]
-
-def preprocess_data(raw_data):
-    processed_data = []
-    for line in raw_data:
-        cleaned_line = clean_text(line)
-        tokens = tokenize_text(cleaned_line)
-        processed_data.append(tokens)
-    return processed_data
-
-if __name__ == "__main__":
-    raw_file_path = 'data/raw/sample_data.txt'  # Update with actual raw data file path
-    raw_data = load_data(raw_file_path)
-    processed_data = preprocess_data(raw_data)
+def clean_text(text: str) -> str:
+    """
+    Cleans and normalizes a single Amharic message:
+    - Removes URLs
+    - Removes emojis/special symbols
+    - Keeps Amharic, digits, and basic punctuation
+    - Normalizes whitespace
+    """
+    if not isinstance(text, str):
+        return ""
     
-    # Save processed data to a file
-    with open('data/processed/processed_data.txt', 'w', encoding='utf-8') as file:
-        for tokens in processed_data:
-            file.write(' '.join(tokens) + '\n')
+    text = normalize_amharic(text)
+    
+    # Remove URLs
+    text = re.sub(r'https?://\S+|www\.\S+', '', text)
+    
+    # Remove emojis and symbols (keep Amharic block + basic punctuation + numbers)
+    # Amharic Unicode block: 1200–137F
+    text = re.sub(r'[^\u1200-\u137F\s0-9.,!?\'"፡።፣፤]', '', text)
+    
+    # Replace multiple whitespace characters with a single space
+    text = re.sub(r'\s+', ' ', text).strip()
+    
+    return text 
+
+def tokenize(text: str) -> List[str]:
+    """
+    Tokenizes text using Hugging Face's XLM-Roberta tokenizer.
+    Returns a list of subword tokens.
+    """
+    if not isinstance(text, str) or not text.strip():
+        return []
+    return tokenizer.tokenize(text)
+
+def preprocess_text(text: str) -> Dict[str, Any]:
+    """
+    Applies cleaning and Hugging Face tokenization to a single text input.
+    Returns a dictionary with cleaned text and token list.
+    """
+    cleaned = clean_text(text)
+    tokens = tokenize(cleaned)
+    return {
+        "cleaned": cleaned,
+        "tokens": tokens
+    }
+
+def preprocess_dataframe(df: pd.DataFrame, text_col='Message') -> pd.DataFrame:
+    """
+    Applies the preprocessing pipeline (clean + tokenize) to a DataFrame.
+    Adds two new columns: 'cleaned_text', 'tokens'.
+    Filters out rows with empty cleaned text.
+    """
+    processed = df[text_col].apply(preprocess_text)
+    
+    df['cleaned_text'] = processed.apply(lambda x: x['cleaned'])
+    df['tokens'] = processed.apply(lambda x: x['tokens'])
+    
+    # Remove empty cleaned messages
+    df = df[df['cleaned_text'].str.strip().astype(bool)]
+    
+    return df
