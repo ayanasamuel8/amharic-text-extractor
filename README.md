@@ -1,58 +1,90 @@
-# EthioMart NER Project
+# Amharic Text Preprocessing and NER Labeling Pipeline
 
-## Overview
-The EthioMart NER Project aims to develop a Named Entity Recognition (NER) system tailored for extracting relevant information from messages scraped from Telegram. This project utilizes advanced language models to identify and classify entities within the text, providing valuable insights for vendor analytics.
+This project provides tools and scripts to preprocess Amharic text data, perform tokenization using Hugging Face's XLM-RoBERTa tokenizer, and label a subset of messages in CoNLL format for Named Entity Recognition (NER) tasks.
 
-## Project Structure
-The project is organized into the following directories and files:
+## Features
 
-- **README.md**: Documentation for the project.
-- **requirements.txt**: Lists the Python dependencies required for the project.
-- **data/**: Contains various datasets.
-  - **raw/**: Raw messages scraped from Telegram.
-  - **processed/**: Preprocessed data (tokenized, cleaned).
-  - **labeled_conll/**: CoNLL formatted labeled data for training and evaluation.
-- **scripts/**: Contains scripts for data scraping, preprocessing, and analysis.
-  - **telegram_scraper.py**: Script to scrape messages from Telegram using Telethon.
-  - **preprocess.py**: Handles text normalization and tokenization.
-  - **label_verifier.py**: Checks CoNLL labels for correctness.
-  - **scorecard_engine.py**: Generates vendor analytics scoring.
-- **models/**: Contains Jupyter notebooks for model training and saved model checkpoints.
-  - **training_xlmroberta.ipynb**: Fine-tuning XLM-R model.
-  - **training_afroxlmr.ipynb**: Fine-tuning AfroXLMR model.
-  - **trained_models/**: Directory for saved model checkpoints.
-- **interpretability/**: Contains notebooks and notes for model interpretability.
-  - **shap_analysis.ipynb**: SHAP/LIME interpretability analysis scripts.
-  - **difficult_cases.md**: Notes on model misclassifications.
-- **notebooks/**: Contains exploratory data analysis notebooks.
-  - **eda_preprocessing.ipynb**: Data exploration and preprocessing tests.
-- **outputs/**: Contains output files for model performance and analytics.
-  - **metrics_summary.csv**: Summary of model performance metrics.
-  - **vendor_scorecard.csv**: Final scorecard table for vendor analytics.
-- **reports/**: Contains interim and final reports.
-  - **interim_summary.pdf**: Interim findings report.
-  - **final_report_blog.pdf**: Final project overview report.
+- **Text Normalization & Cleaning:**  
+  Normalize Amharic punctuation and remove unwanted characters, URLs, and emojis.
 
-## Setup Instructions
-1. Clone the repository:
-   ```
-   git clone https://github.com/ayanasamuel8/amharic-text-extractor.git
-   ```
-2. Navigate to the project directory:
-   ```
-   cd amharic-text-extractor
-   ```
-3. Install the required dependencies:
-   ```
-   pip install -r requirements.txt
-   ```
+- **Tokenization:**  
+  Tokenize Amharic text using the pretrained XLM-RoBERTa tokenizer.
 
-## Usage Guidelines
-- Use the `telegram_scraper.py` script to collect raw messages from Telegram.
-- Preprocess the collected data using `preprocess.py`.
-- Train the models using the provided Jupyter notebooks in the `models/` directory.
-- Evaluate model performance and generate analytics using the scripts in the `scripts/` directory.
-- Review the interpretability analysis in the `interpretability/` directory to understand model decisions.
+- **Lemmatization (optional):**  
+  Support for Amharic lemmatization to improve entity labeling consistency.
 
-## Contribution
-Contributions to the EthioMart NER Project are welcome. Please submit a pull request or open an issue for any suggestions or improvements.
+- **NER Labeling:**  
+  Label product, price, and location entities in Amharic messages in the CoNLL format.
+
+## Directory Structure
+
+```/
+├── scripts/ # Preprocessing and tokenization scripts
+├── data/raw # Raw datasets
+├── data/processed #  processed datasets
+├── data/labeled/ # Labeled data in CoNLL format
+├── notebooks/ # Jupyter notebooks for exploration and annotation
+├── tests/ # Unit tests for preprocessing functions
+├── README.md # Project overview and instructions
+```
+
+## Getting Started
+
+### Requirements
+
+- Python 3.8+
+- `transformers` library (for tokenizer)
+- `pandas`
+
+Install dependencies:
+
+```bash
+pip install -r requirements.txt
+```
+## Usage
+### Preprocess data:
+
+```python
+from scripts.preprocess import preprocess_dataframe
+import pandas as pd
+
+df = pd.read_csv('path/to/your/csv_file')
+processed_df = preprocess_dataframe(df, text_col='Message')
+processed_df.to_csv('data/processed_messages.csv', index=False)
+```
+## Manual NER labeling:
+
+Select a subset of preprocessed messages.
+
+Label entities in CoNLL format following the guidelines:
+
+B-Product, I-Product
+
+B-PRICE, I-PRICE
+
+B-LOC, I-LOC
+
+O for tokens outside entities
+
+Save labeled data:
+
+Save the labeled data in plain text files (*.conll) inside the data/labeled_conll/ directory.
+
+CoNLL Labeling Format
+Each token is on its own line followed by the entity label, separated by a space:
+
+```mathematica
+token B-Product
+token I-Product
+token O
+
+token B-LOC
+token I-LOC
+token O
+```
+Sentences/messages are separated by blank lines.
+
+## Contributing
+Feel free to open issues or submit pull requests to improve the preprocessing, tokenization, or labeling process.
+
+This project is for Amharic text preprocessing and NER annotation purposes. and we'll be updated as project grows.
