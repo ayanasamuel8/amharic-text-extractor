@@ -10,7 +10,8 @@ api_id = os.getenv('TELEGRAM_API_ID')
 api_hash = os.getenv('TELEGRAM_API_HASH')
 phone = os.getenv('TELEGRAM_PHONE')
 
-session_name = 'ethiomart_session'
+
+session_name = 'ethiomart_session2'
 
 channels = [
     '@ZemenExpress',
@@ -21,31 +22,22 @@ channels = [
     '@sinayelj',
 ]
 
-MEDIA_DIR = 'photos'
-os.makedirs('../data/raw' + MEDIA_DIR, exist_ok=True)
-
 async def scrape_channel(client, channel_username, writer):
     entity = await client.get_entity(channel_username)
-    channel_title = entity.title  # Extract the channel's title
+    channel_title = entity.title
     
     print(f"[INFO] Starting scraping channel: {channel_title} ({channel_username})")
     
     async for message in client.iter_messages(entity, limit=10000):
-        media_path = None
-        # Check if media exists and is a photo
-        if message.media and hasattr(message.media, 'photo'):
-            filename = f"{channel_username}_{message.id}.jpg"
-            media_path = os.path.join(MEDIA_DIR, filename)
-            await client.download_media(message.media, media_path)
-            print(f"  [MEDIA] Downloaded {media_path}")
-
         writer.writerow([
             channel_title,
             channel_username,
             message.id,
             message.message,
             message.date,
-            media_path
+            message.views or 0,
+            message.replies or 0,
+            message.forwards or 0
         ])
     print(f"[INFO] Finished scraping {channel_title}")
 
@@ -53,9 +45,9 @@ async def main():
     client = TelegramClient(session_name, api_id, api_hash)
     await client.start(phone=phone)
     
-    with open('../data/raw/telegram_data.csv', 'w', newline='', encoding='utf-8') as csvfile:
+    with open('./rawtelegram_data.csv', 'w', newline='', encoding='utf-8') as csvfile:
         writer = csv.writer(csvfile)
-        writer.writerow(['Channel Title', 'Channel Username', 'ID', 'Message', 'Date', 'Media Path'])
+        writer.writerow(['Channel Title', 'Channel Username', 'Message ID', 'Message Text', 'Date', 'Views', 'Replies', 'Forwards'])
 
         for channel in channels:
             await scrape_channel(client, channel, writer)

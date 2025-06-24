@@ -1,90 +1,179 @@
-# Amharic Text Preprocessing and NER Labeling Pipeline
+# 📚 Amharic NER Pipeline for EthioMart
 
-This project provides tools and scripts to preprocess Amharic text data, perform tokenization using Hugging Face's XLM-RoBERTa tokenizer, and label a subset of messages in CoNLL format for Named Entity Recognition (NER) tasks.
+This repository contains tools and scripts to preprocess Amharic Telegram text data, perform Named Entity Recognition (NER) using a fine-tuned transformer model, and extract vendor analytics for micro-lending evaluation.
 
-## Features
+---
 
-- **Text Normalization & Cleaning:**  
-  Normalize Amharic punctuation and remove unwanted characters, URLs, and emojis.
+## ✨ Features
 
-- **Tokenization:**  
-  Tokenize Amharic text using the pretrained XLM-RoBERTa tokenizer.
+- **✅ Text Cleaning & Normalization**
+  - Removes emojis, symbols, links, and redundant punctuation.
+  - Normalizes Amharic-specific characters and spacing.
 
-- **Lemmatization (optional):**  
-  Support for Amharic lemmatization to improve entity labeling consistency.
+- **🔠 Tokenization**
+  - Uses `XLM-RoBERTa` tokenizer for multilingual support.
+  - Token-level formatting for CoNLL-style entity tagging.
 
-- **NER Labeling:**  
-  Label product, price, and location entities in Amharic messages in the CoNLL format.
+- **🏷️ NER Annotation Support**
+  - Manual annotation via CoNLL format.
+  - Supports entity labels:
+    - `B-PRICE`, `I-PRICE`
+    - `B-PRODUCT`, `I-PRODUCT`
+    - `B-LOC`, `I-LOC`
+    - `O` for non-entity tokens
 
-## Directory Structure
+- **🧠 Model Fine-tuning**
+  - Fine-tunes `xlm-roberta-base` on Amharic NER data.
+  - Built using Hugging Face Transformers.
 
-```/
-├── scripts/ # Preprocessing and tokenization scripts
-├── data/raw # Raw datasets
-├── data/processed #  processed datasets
-├── data/labeled/ # Labeled data in CoNLL format
-├── notebooks/ # Jupyter notebooks for exploration and annotation
-├── tests/ # Unit tests for preprocessing functions
-├── README.md # Project overview and instructions
+- **📊 Vendor Analytics & Scorecard**
+  - Extracts product/price entities from vendor posts.
+  - Computes posting frequency, engagement metrics, and Lending Score.
+
+---
+
+## 🗂️ Project Structure
+``` yaml
+/
+├── scripts/
+│ ├── preprocess.py # Cleaning and tokenization
+│ ├── ner_utils.py # Entity extraction utilities
+│ ├── vendor_metrics.py # Scorecard computation
+│ └── telegram_scraper.py # Telegram data scraping
+│
+├── data/
+│ ├── raw/ # Raw Telegram data
+│ ├── processed/ # Cleaned + enriched data
+│ └── labeled_conll/ # CoNLL annotated data
+│
+├── models/
+│ └── trained_models/ # Fine-tuned XLM-RoBERTa model
+│
+├── notebooks/
+│ ├── 01_preprocessing.ipynb
+│ ├── 03_fine_tuning.ipynb
+│ ├── 05_lime_and_shap.ipynb
+│ └── 08_scorecard_analysis.ipynb
+│
+├── interpretability/
+│ └── difficult_cases.md # Model errors & discussion
+│
+├── outputs/
+│ └── enriched_data.csv # Product/price enriched records
+│
+├── tests/
+│ ├── test_preprocess.py
+│ └── test_dummy.py
+│
+├── requirements.txt
+└── README.md
 ```
 
-## Getting Started
+---
 
-### Requirements
+## 🚀 Getting Started
 
-- Python 3.8+
-- `transformers` library (for tokenizer)
-- `pandas`
-
-Install dependencies:
+### 📦 Installation
 
 ```bash
+git clone https://github.com/yourname/ethiomart-ner.git
+cd ethiomart-ner
 pip install -r requirements.txt
 ```
-## Usage
-### Preprocess data:
-
+## 🧹 Step 1: Preprocessing
 ```python
 from scripts.preprocess import preprocess_dataframe
 import pandas as pd
 
-df = pd.read_csv('path/to/your/csv_file')
-processed_df = preprocess_dataframe(df, text_col='Message')
-processed_df.to_csv('data/processed_messages.csv', index=False)
+df = pd.read_csv("data/raw/telegram_data.csv")
+cleaned_df = preprocess_dataframe(df, text_col="Message")
+cleaned_df.to_csv("data/processed/cleaned_messages.csv", index=False)
 ```
-## Manual NER labeling:
+## ✍️ Step 2: Manual NER Labeling
+Use a subset of cleaned messages.
 
-Select a subset of preprocessed messages.
+Annotate each token in CoNLL format:
 
-Label entities in CoNLL format following the guidelines:
-
-B-Product, I-Product
-
-B-PRICE, I-PRICE
-
-B-LOC, I-LOC
-
-O for tokens outside entities
-
-Save labeled data:
-
-Save the labeled data in plain text files (*.conll) inside the data/labeled_conll/ directory.
-
-CoNLL Labeling Format
-Each token is on its own line followed by the entity label, separated by a space:
-
-```mathematica
-token B-Product
-token I-Product
-token O
-
-token B-LOC
-token I-LOC
-token O
+```css
+ስልክ  B-PRODUCT
+በ    O
+2000 B-PRICE
+ብር   I-PRICE
 ```
-Sentences/messages are separated by blank lines.
+Save labeled data in data/labeled_conll/ with blank lines between sentences.
 
-## Contributing
-Feel free to open issues or submit pull requests to improve the preprocessing, tokenization, or labeling process.
+## 🧠 Step 3: Model Training
+Run training via notebook:
 
-This project is for Amharic text preprocessing and NER annotation purposes. and we'll be updated as project grows.
+```bash
+notebooks/03_fine_tuning.ipynb
+```
+### Model output saved to:
+
+```bash
+models/trained_models/
+```
+## 🔎 Step 4: Entity Extraction
+Use the fine-tuned model to extract product and price entities:
+
+```python
+from scripts.ner_utils import load_ner_pipeline, enrich_dataframe_with_entities
+import pandas as pd
+
+df = pd.read_csv("data/processed/cleaned_messages.csv")
+ner_pipe = load_ner_pipeline("models/trained_models/")
+df_enriched = enrich_dataframe_with_entities(df, text_col="cleaned_text", ner_pipeline=ner_pipe)
+df_enriched.to_csv("outputs/enriched_data.csv", index=False)
+```
+## 📊 Step 5: Vendor Scorecard
+Generate vendor-level analytics and a Lending Score:
+
+```python
+from scripts.vendor_metrics import prepare_prices, compute_vendor_metrics
+
+df = pd.read_csv("outputs/enriched_data.csv")
+df = prepare_prices(df)
+scorecard_df = compute_vendor_metrics(df)
+scorecard_df.to_csv("outputs/vendor_scorecard.csv", index=False)
+```
+## ✅ Tests
+```bash
+pytest
+```
+## Covers:
+
+### Preprocessing and normalization
+
+### Entity extraction logic
+
+# 📌 Contributing
+We welcome contributions that:
+
+- Improve preprocessing for Amharic
+
+- Add more entity classes
+
+- Enhance analytics (e.g., customer sentiment, time series trends)
+
+1. Fork the repo
+
+2. Create your feature branch (git checkout -b feature/amharic-cleaner)
+
+3. Commit your changes
+
+4. Open a pull request
+
+# 🧭 Future Roadmap
+- ✅ Live Telegram feed scoring
+
+- 🚧 Expand labeled dataset size
+
+- 🚧 Add dashboard for scorecard insights
+
+- 🚧 Support other Ethiopian languages (e.g., Afaan Oromoo)
+
+# 📜 License
+
+MIT License – open-source and community-friendly!
+
+EthioMart NLP | Powered by XLM-R and Open Source Intelligence 🇪🇹
