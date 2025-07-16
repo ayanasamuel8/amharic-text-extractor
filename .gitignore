@@ -5,3 +5,7 @@ data/raw/
 data/processed/
 venv/
 models/
+outputs/
+photos/
+.venv/
+pychagev/
